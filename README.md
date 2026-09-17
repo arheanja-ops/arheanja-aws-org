@@ -24,8 +24,10 @@ cp .envrc.example .envrc && direnv allow
 ```
 
 ## CI/CD
-- **PR** → `terraform plan` (comentado en el PR).
-- **Merge a main** → `apply` con **aprobación manual** (environment `org-apply`).
+- **PR** → `terraform plan` (resumen en el Job Summary).
+- **Apply** → manual, botón "Run workflow" en Actions (`workflow_dispatch`).
+  `required reviewers` en environments es feature paga de GitHub para repos
+  privados, así que el gate real es que solo tú puedes lanzar ese botón.
 - Deploy por **OIDC** (rol `arheanja-aws-org-deploy`), sin llaves.
 
 ## Estado actual
