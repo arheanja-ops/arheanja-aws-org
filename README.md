@@ -51,9 +51,11 @@ sequenceDiagram
     AWS-->>CI: terraform plan (S3 backend, lock nativo)
     CI-->>PR: resumen del plan en Job Summary
     Dev->>PR: revisa y mergea a main
-    Note over GH: apply NO se dispara solo<br/>(required_reviewers es de pago en repos privados)
-    Dev->>GH: "Run workflow" manual en Actions
-    GH->>AWS: terraform apply (gate = solo el dueño puede lanzarlo)
+    PR->>GH: el push a main encola el job "apply"
+    Note over GH: apply queda "Waiting"<br/>(required reviewers · gratis en repo público)
+    GH-->>Dev: notifica: aprobación pendiente
+    Dev->>GH: aprueba el deployment
+    GH->>AWS: terraform apply (reusa el plan guardado)
     AWS-->>GH: recursos creados/actualizados
 ```
 
@@ -78,9 +80,12 @@ cp .envrc.example .envrc && direnv allow
 
 ## CI/CD
 - **PR** → `terraform plan` (resumen en el Job Summary).
-- **Apply** → manual, botón "Run workflow" en Actions (`workflow_dispatch`).
-  `required reviewers` en environments es feature paga de GitHub para repos
-  privados, así que el gate real es que solo tú puedes lanzar ese botón.
+- **Merge a `main`** → el job `apply` se encola en el environment `org-apply` y
+  queda **"Waiting"** hasta que apruebes el deployment (required reviewers).
+  Aprobás desde el run en Actions (o el link de la notificación) y recién ahí
+  corre el `apply`, reusando el plan guardado.
+- El repo es **público**, por lo que los *required reviewers* de GitHub
+  Environments son gratis (en repos privados serían de pago).
 - Deploy por **OIDC** (rol `arheanja-aws-org-deploy`), sin llaves.
 
 ## Estado actual (2026-09-16)

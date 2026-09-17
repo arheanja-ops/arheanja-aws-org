@@ -126,6 +126,14 @@ Cada recurso del PR verificado contra el pricing oficial:
 $0: SCPs, SSO, permission sets, Budgets (2 gratis/cuenta) y Cost Anomaly
 Detection son gratis.
 
+### Flujo de aprobación del apply (cambio)
+- El repo se hizo **público** para habilitar *required reviewers* en GitHub
+  Environments (gratis en repos públicos; de pago en privados). No expone
+  secretos: los tokens viven en Actions secrets / SSM, el deploy es por OIDC.
+- Nuevo flujo: **merge a `main` → el `apply` se encola en el environment
+  `org-apply` en estado "Waiting" → se aprueba el deployment → corre**. Sustituye
+  al `workflow_dispatch` manual. El job `apply` ahora dispara en `push` a `main`.
+
 ### Premisa de costo
 Todo lo anterior es $0: cambios de código, config de GitHub (environments,
 secrets, delete-branch-on-merge), políticas IAM, y el `plan`/lecturas de
