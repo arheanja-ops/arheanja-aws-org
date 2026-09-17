@@ -1,0 +1,6 @@
+# Plantilla versionada. Copia a .envrc (ignorado) y corre `direnv allow`.
+# No pongas secretos aquí.
+
+export AWS_PROFILE=taxops-admin
+export AWS_REGION=us-east-1
+export GH_CONFIG_DIR="$HOME/.config/gh-arheanja-aws-org"

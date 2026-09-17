@@ -1,0 +1,15 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
+*.tfvars
+!*.tfvars.example
+
+# direnv / entorno
+.envrc
+.direnv/
+.env
+
+# OS
+.DS_Store

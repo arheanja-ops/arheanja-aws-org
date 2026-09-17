@@ -1,0 +1,92 @@
+name: Organization · Terraform
+
+# Regla: PR -> plan. Merge a main -> apply con aprobación (environment org-apply).
+on:
+  pull_request:
+    paths: ["infra/**", ".github/workflows/terraform.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/**", ".github/workflows/terraform.yml"]
+
+concurrency:
+  group: org-terraform
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.1"
+      - name: Credenciales AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ORG_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - run: terraform fmt -check -recursive
+      - run: terraform init -input=false
+      - run: terraform validate -no-color
+      - name: Plan
+        run: terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+      - name: Resumen del plan
+        if: always()
+        run: |
+          {
+            echo "## 📋 Terraform Plan (organización)"
+            echo '```'
+            grep -E "Plan:|will be|must be" plan.txt | head -40 || echo "sin cambios"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Guardar plan
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: infra/tfplan
+          retention-days: 5
+
+  apply:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: org-apply
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.1"
+      - name: Credenciales AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ORG_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - run: terraform init -input=false
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: infra
+      - run: terraform apply -input=false -no-color tfplan
+      - name: Resumen del apply
+        if: always()
+        run: |
+          {
+            echo "## ✅ Organización aplicada"
+            terraform output -no-color 2>/dev/null || echo "(sin outputs)"
+          } >> "$GITHUB_STEP_SUMMARY"
