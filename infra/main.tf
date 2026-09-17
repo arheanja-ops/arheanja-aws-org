@@ -11,11 +11,11 @@ terraform {
   # State separado del de TaxOps prod: la organización tiene su propio ciclo de
   # vida. Reutiliza el backend de state existente de la cuenta.
   backend "s3" {
-    bucket         = "awsorg-tfstate-786567028012"
-    key            = "organization/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "awsorg-tflock"
-    encrypt        = true
+    bucket       = "awsorg-tfstate-786567028012"
+    key          = "organization/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
