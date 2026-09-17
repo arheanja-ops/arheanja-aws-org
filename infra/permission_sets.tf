@@ -25,6 +25,14 @@ resource "aws_ssoadmin_permission_set" "admin" {
   session_duration = "PT8H"
 }
 
+# La managed policy AdministratorAccess YA está adjunta al permission set
+# (venía de antes). Se adopta al state con import (id:
+# "managedPolicyArn,permissionSetArn,instanceArn") en vez de re-adjuntarla.
+import {
+  to = aws_ssoadmin_managed_policy_attachment.admin
+  id = "arn:aws:iam::aws:policy/AdministratorAccess,arn:aws:sso:::permissionSet/ssoins-722353cec8cc0313/ps-72236cd8d2569a6b,arn:aws:sso:::instance/ssoins-722353cec8cc0313"
+}
+
 resource "aws_ssoadmin_managed_policy_attachment" "admin" {
   instance_arn       = local.sso_instance_arn
   permission_set_arn = aws_ssoadmin_permission_set.admin.arn
