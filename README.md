@@ -86,9 +86,9 @@ cp .envrc.example .envrc && direnv allow
 ## Estado actual (2026-09-16)
 - **Fase 0 completa**: emails alias definidos, repo publicado, MFA en root
   confirmado (`AccountMFAEnabled=1`).
-- **Fase 1 en código, no aplicada**: `terraform plan` valida 3 OUs a crear
-  (`Workloads`, `Sandbox`, `Security`) contra la org real `o-k27om02vsy`, raíz
-  `r-j9f1`. Falta `apply` (manual, vía `workflow_dispatch`).
+- **Fase 1 aplicada**: OUs creadas en la org real `o-k27om02vsy` (raíz
+  `r-j9f1`) — `Workloads` (`ou-j9f1-gxoo9kci`), `Sandbox`
+  (`ou-j9f1-o7twnsfh`), `Security` (`ou-j9f1-ueol9xss`). Costo: $0.
 - State: S3 `awsorg-tfstate-786567028012`, key `organization/`, **locking
   nativo de S3** (`use_lockfile`, no DynamoDB — migrado desde el diseño
   original que usaba `awsorg-tflock`).
