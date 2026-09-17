@@ -1,31 +1,12 @@
-# Fase 1 (resto) — Control de costos (garantizar el "gratis").
-# COSTO: AWS Budgets da 2 budgets gratis por cuenta; Cost Anomaly Detection es
-# gratis.
-
-# --- Budget mensual de $1 con alertas al 80% y 100% ---
-resource "aws_budgets_budget" "monthly_zero" {
-  name         = "arheanja-org-monthly-zero"
-  budget_type  = "COST"
-  limit_amount = tostring(var.monthly_budget_usd)
-  limit_unit   = "USD"
-  time_unit    = "MONTHLY"
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = [var.budget_notification_email]
-  }
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 100
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = [var.budget_notification_email]
-  }
-}
+# Fase 1 (resto) — Control de costos.
+# COSTO: $0. Cost Anomaly Detection es gratis ("available at no additional
+# charge", AWS).
+#
+# NOTA: no se crea un budget aquí. La cuenta ya tiene `account-zero-spend`
+# ($1/mes, alertas a >$0.01 / 50% / 80% / forecast 100%), más completo que un
+# duplicado. AWS solo da 2 budgets gratis por cuenta, así que no gastamos ese
+# slot en algo redundante. Los budgets per-cuenta llegan en la Fase 2 (cada
+# cuenta nueva trae sus propios 2 budgets gratis).
 
 # --- Cost Anomaly Detection (gratis) a nivel de servicio ---
 resource "aws_ce_anomaly_monitor" "services" {

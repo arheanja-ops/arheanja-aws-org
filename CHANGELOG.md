@@ -94,8 +94,20 @@ Todo GRATIS. Entregado por PR; el `apply` se dispara manual (`workflow_dispatch`
 - Nuevos: `ReadOnly` (auditoría) y `Billing` (costos), con sus managed policies.
 
 ### Control de costos (`infra/budgets.tf`)
-- Budget mensual de $1 con alertas al 80% y 100% (email `taxopsa@gmail.com`).
 - Cost Anomaly Detection (monitor por servicio + suscripción diaria, umbral $1).
+  Gratis ("available at no additional charge", AWS).
+- **No se crea budget**: la cuenta ya tiene `account-zero-spend` ($1/mes, alertas
+  a >$0.01 / 50% / 80% / forecast 100%), más completo que el que se había
+  propuesto. AWS solo da **2 budgets gratis por cuenta**; no se gasta ese slot en
+  un duplicado. Los budgets per-cuenta llegan en la Fase 2.
+
+### Auditoría de costo (premisa dura $0)
+Cada recurso del PR verificado contra el pricing oficial:
+- SCPs + attachments + habilitar SCP type: **$0** (Organizations no cobra).
+- Permission sets SSO + managed policy attachments: **$0** (Identity Center gratis).
+- Cost Anomaly Detection: **$0**.
+- Se retiró el único recurso con potencial de costo futuro (2º budget) por
+  redundante. Total del PR: **$0**, sin consumir slots gratis reutilizables.
 
 ### Rol OIDC de deploy — permisos ampliados
 - El rol `arheanja-aws-org-deploy` solo tenía `organizations:*` + S3 state, lo
@@ -105,7 +117,7 @@ Todo GRATIS. Entregado por PR; el `apply` se dispara manual (`workflow_dispatch`
 
 ### Verificación (local, `AWS_PROFILE=taxops-admin`)
 - `terraform fmt` sin cambios, `validate` OK.
-- `terraform plan` real contra la org: **`2 to import, 17 to add, 2 to change,
+- `terraform plan` real contra la org: **`2 to import, 16 to add, 2 to change,
   0 to destroy`**. Las 3 OUs NO aparecen entre los cambios → cero drift. Los 2
   in-place son benignos (org: solo `+SERVICE_CONTROL_POLICY`; admin PS: solo
   `+description`). Nada se destruye.

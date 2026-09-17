@@ -19,14 +19,8 @@ variable "allowed_regions" {
 }
 
 # Control de costos (Fase 1).
-variable "monthly_budget_usd" {
-  description = "Límite del budget mensual por cuenta (premisa: costo ~\\$0)."
-  type        = number
-  default     = 1
-}
-
 variable "budget_notification_email" {
-  description = "Email que recibe alertas de budget y anomalías de costo."
+  description = "Email que recibe alertas de anomalías de costo."
   type        = string
   default     = "taxopsa@gmail.com"
 }
