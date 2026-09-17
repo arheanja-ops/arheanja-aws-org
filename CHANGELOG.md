@@ -58,11 +58,18 @@ organización AWS o el repo.
     dejados por los runs fallidos antes de reintentar.
 - Se activó `delete_branch_on_merge` en el repo (config de GitHub, gratis).
 
-### Fase 1 (validación, sin aplicar)
+### Fase 1 — aplicada
 - `terraform plan` corrido contra la organización real (`o-k27om02vsy`, raíz
-  `r-j9f1`): confirma 3 recursos a crear (`Workloads`, `Sandbox`, `Security`),
-  0 a cambiar, 0 a destruir. **No se aplicó** — queda pendiente el `apply`
-  manual vía Actions cuando se confirme.
+  `r-j9f1`): confirmó 3 recursos a crear (`Workloads`, `Sandbox`, `Security`),
+  0 a cambiar, 0 a destruir.
+- `apply` disparado manualmente vía `workflow_dispatch` en Actions. Resultado
+  verificado directo en AWS (no solo en el log del workflow):
+  - `Workloads` → `ou-j9f1-gxoo9kci`
+  - `Sandbox` → `ou-j9f1-o7twnsfh`
+  - `Security` → `ou-j9f1-ueol9xss`
+- Costo: $0 (AWS Organizations no cobra por OUs). Ningún workload existente
+  fue tocado — las cuentas siguen todas bajo la raíz hasta la Fase 2
+  (creación de cuentas nuevas y migración por proyecto).
 
 ### Premisa de costo
 Todo lo anterior es $0: cambios de código, config de GitHub (environments,
