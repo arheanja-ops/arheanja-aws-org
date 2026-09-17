@@ -37,7 +37,6 @@ data "aws_iam_policy_document" "region_lock" {
   statement {
     sid       = "DenyOutsideAllowedRegions"
     effect    = "Deny"
-    actions   = ["*"]
     resources = ["*"]
 
     condition {
@@ -46,6 +45,8 @@ data "aws_iam_policy_document" "region_lock" {
       values   = var.allowed_regions
     }
 
+    # SCP: un statement usa Action O NotAction, nunca ambos. Denegamos todo
+    # (fuera de la región permitida) EXCEPTO estos servicios globales.
     not_actions = [
       "iam:*",
       "organizations:*",
@@ -68,6 +69,9 @@ resource "aws_organizations_policy" "region_lock" {
   description = "Deniega acciones fuera de ${join(",", var.allowed_regions)} (excepto servicios globales)."
   type        = "SERVICE_CONTROL_POLICY"
   content     = data.aws_iam_policy_document.region_lock.json
+
+  # Espera a que el tipo SCP quede habilitado en el root antes de crear/adjuntar.
+  depends_on = [aws_organizations_organization.this]
 }
 
 # --- SCP 2: Denegar servicios caros por defecto (rompen el free tier) ---
@@ -110,6 +114,8 @@ resource "aws_organizations_policy" "deny_expensive" {
   description = "Deniega RDS, Redshift, SageMaker, ES, ElastiCache, NAT GW y EC2 grandes."
   type        = "SERVICE_CONTROL_POLICY"
   content     = data.aws_iam_policy_document.deny_expensive.json
+
+  depends_on = [aws_organizations_organization.this]
 }
 
 # --- SCP 3: Exigir tag Project al crear recursos clave ---
@@ -138,6 +144,8 @@ resource "aws_organizations_policy" "require_tags" {
   description = "Exige el tag Project al crear EC2, Lambda, S3, DynamoDB."
   type        = "SERVICE_CONTROL_POLICY"
   content     = data.aws_iam_policy_document.require_tags.json
+
+  depends_on = [aws_organizations_organization.this]
 }
 
 # --- SCP 4: Proteger la organización ---
@@ -162,6 +170,8 @@ resource "aws_organizations_policy" "protect_org" {
   description = "Impide salir de la org, borrar CloudTrail o cerrar cuentas desde cuentas hijas."
   type        = "SERVICE_CONTROL_POLICY"
   content     = data.aws_iam_policy_document.protect_org.json
+
+  depends_on = [aws_organizations_organization.this]
 }
 
 # --- Attachments ---

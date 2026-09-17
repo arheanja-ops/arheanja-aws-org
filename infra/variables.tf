@@ -17,10 +17,3 @@ variable "allowed_regions" {
   type        = list(string)
   default     = ["us-east-1"]
 }
-
-# Control de costos (Fase 1).
-variable "budget_notification_email" {
-  description = "Email que recibe alertas de anomalías de costo."
-  type        = string
-  default     = "taxopsa@gmail.com"
-}
