@@ -32,12 +32,12 @@ jobs:
       run:
         working-directory: infra
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: "1.16.1"
       - name: Credenciales AWS (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ORG_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -45,19 +45,20 @@ jobs:
       - run: terraform init -input=false
       - run: terraform validate -no-color
       - name: Plan
-        run: terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+        shell: bash
+        run: set -o pipefail && terraform plan -input=false -no-color -out=tfplan | tee plan.txt
       - name: Resumen del plan
         if: always()
         run: |
           {
             echo "## 📋 Terraform Plan (organización)"
             echo '```'
-            grep -E "Plan:|will be|must be" plan.txt | head -40 || echo "sin cambios"
+            grep -E "Plan:|will be|must be|Error" plan.txt | head -40 || echo "sin cambios"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Guardar plan
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: infra/tfplan
@@ -72,17 +73,17 @@ jobs:
       run:
         working-directory: infra
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: "1.16.1"
       - name: Credenciales AWS (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ORG_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - run: terraform init -input=false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: tfplan
           path: infra
