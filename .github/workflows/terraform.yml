@@ -1,9 +1,9 @@
 name: Organization · Terraform
 
-# Regla: PR -> plan (automático). Apply -> manual (workflow_dispatch), nunca
-# automático al mergear. El gate de "required reviewers" en environments es
-# feature paga de GitHub para repos privados, así que el gate real es que
-# nadie más que tú puede lanzar este botón en Actions.
+# Regla: PR -> plan (automático). Merge a main -> el apply queda ENCOLADO
+# esperando aprobación manual (environment `org-apply` con required reviewers).
+# El repo es público, así que los required reviewers de GitHub Environments son
+# gratis. Al aprobar el deployment, el apply reusa el plan guardado del push.
 on:
   pull_request:
     paths: ["infra/**", ".github/workflows/terraform.yml"]
@@ -65,7 +65,9 @@ jobs:
           retention-days: 5
 
   apply:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    # Corre al mergear a main (push) o en re-run manual. El environment
+    # org-apply (required reviewers) lo deja en "Waiting" hasta tu aprobación.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: plan
     runs-on: ubuntu-latest
     environment: org-apply
