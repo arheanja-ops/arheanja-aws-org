@@ -28,3 +28,17 @@ resource "aws_ssoadmin_account_assignment" "dian_bot_admin" {
   target_id   = aws_organizations_account.dian_bot.id
   target_type = "AWS_ACCOUNT"
 }
+
+# jaime.admin -> AdministratorAccess en el resto de cuentas de Workloads.
+resource "aws_ssoadmin_account_assignment" "workload_admin" {
+  for_each = aws_organizations_account.workload
+
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.admin.arn
+
+  principal_id   = data.aws_identitystore_user.owner.user_id
+  principal_type = "USER"
+
+  target_id   = each.value.id
+  target_type = "AWS_ACCOUNT"
+}
