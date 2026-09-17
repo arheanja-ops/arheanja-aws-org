@@ -140,3 +140,35 @@ secrets, delete-branch-on-merge), políticas IAM, y el `plan`/lecturas de
 Terraform no crean ni modifican recursos facturables. Ver
 `DIAN-bot/docs/AWS-ORG-PLAN.md` sección 12 para el resumen de costos del plan
 completo.
+
+## 2026-09-17 — Fase 1 aplicada + arranque de Fase 2
+
+### Fase 1 — aplicada y verificada en AWS
+Tras 3 iteraciones de apply (cada una corrigió errores reales que solo se ven
+contra la cuenta viva), la Fase 1 quedó cerrada:
+- **4 SCPs adjuntas a Workloads** (`region-lock`, `deny-expensive-services`,
+  `require-tags`, `protect-org`); `Sandbox` solo `region-lock`. SCP type
+  habilitado en el root `r-j9f1`.
+- **Permission sets** Admin (importado) / ReadOnly / Billing.
+- `terraform plan` final → **No changes** (state consistente, sin drift).
+
+Errores corregidos en el camino (documentados por trazabilidad):
+1. SCP `region-lock`: `Action` + `NotAction` juntos no es válido en SCP → solo
+   `NotAction`.
+2. Attachments: carrera con el enable del SCP type → `depends_on` en la org.
+3. Rol OIDC `arheanja-aws-org-deploy`: faltaban `iam:GetRole` y permisos de
+   SSO-provisioning → ampliados (additivo).
+4. Cost Anomaly: la cuenta ya tiene `Default-Services-Monitor` (solo 1
+   dimensional permitido) → se retiró el monitor/subscription; la cobertura de
+   costo la da el budget `account-zero-spend`.
+5. Attachment `AdministratorAccess`: ya estaba adjunto → adoptado vía `import`.
+
+### Fase 2 — arranque (cuenta piloto dian-bot)
+- `infra/accounts.tf`: `aws_organizations_account.dian_bot` bajo la OU
+  `Workloads`, email `taxopsa+dianbot@gmail.com`, `role_name`
+  `OrganizationAccountAccessRole`, `close_on_deletion = false`.
+- Plan: **`1 to add, 0 to change, 0 to destroy`**.
+- Costo: **$0** (crear cuenta miembro es gratis; trae su propio free tier).
+- ⚠️ Irreversibilidad: crear es inmediato; eliminar no es trivial (Terraform no
+  cierra la cuenta al destroy; el cierre real implica el proceso de 90 días de
+  AWS). Por eso `close_on_deletion = false`.
