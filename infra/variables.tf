@@ -10,3 +10,17 @@ variable "account_emails" {
     taxops-dev      = "taxopsa+taxopsdev@gmail.com"
   }
 }
+
+# Regiones permitidas por el guardrail region-lock (SCP).
+variable "allowed_regions" {
+  description = "Regiones donde se permite operar. Servicios globales se exceptúan aparte."
+  type        = list(string)
+  default     = ["us-east-1"]
+}
+
+# Control de costos (Fase 1).
+variable "budget_notification_email" {
+  description = "Email que recibe alertas de anomalías de costo."
+  type        = string
+  default     = "taxopsa@gmail.com"
+}
