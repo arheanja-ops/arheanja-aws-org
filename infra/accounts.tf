@@ -1,37 +1,61 @@
-# Fase 2 — Cuentas por proyecto (una cuenta AWS por proyecto/entorno).
+# Fase 2 — Cuentas por unidad de aislamiento (decisión 2026-09-18).
 #
-# Empezamos con dian-bot como PILOTO (el proyecto más fácil: casi stateless, ya
-# es IaC). Validado el patrón end-to-end, se replican las demás.
+# Estructura acordada (proyectos personales, pre-monetización → pocas cuentas):
+#   - ai-platform-arheanja : IA / agentes / bots (DIAN-bot, job-hunt-bot,
+#                            matchstack, etc.). Es la cuenta ex "dian-bot".
+#   - taxops               : TaxOps-11 + investment-self (aislamiento
+#                            compartido, aceptado conscientemente).
+#   - management (786567028012): solo billing/org/SSO — se vacía al final vía
+#                            migraciones de workloads.
 #
-# COSTO: crear una cuenta miembro en AWS Organizations es GRATIS. Cada cuenta
-# nueva trae su propio free tier.
-#
-# IMPORTANTE (irreversibilidad): crear la cuenta es inmediato, pero eliminarla
-# no es trivial — Terraform por defecto NO la cierra al hacer destroy (la saca
-# de la org); cerrarla de verdad implica el proceso de AWS con espera de 90
-# días. Por eso no ponemos close_on_deletion.
+# COSTO: crear cuentas miembro es GRATIS; cada una trae su propio free tier.
+# IRREVERSIBILIDAD: crear es inmediato; cerrar implica el proceso de 90 días de
+# AWS. Por eso close_on_deletion = false.
 
-resource "aws_organizations_account" "dian_bot" {
-  name      = "dian-bot"
-  email     = var.account_emails["dian-bot"]
+# --- Cuenta de IA / agentes / bots (ex dian-bot, ya existente) ---
+# Renombrada de "dian-bot" a "ai-platform-arheanja". Cambiar el friendly name de
+# una cuenta miembro es un update in-place (no recrea la cuenta).
+#
+# El recurso Terraform pasó de "dian_bot" a "ai_platform": el moved block mueve
+# el estado sin destruir/recrear la cuenta.
+moved {
+  from = aws_organizations_account.dian_bot
+  to   = aws_organizations_account.ai_platform
+}
+
+resource "aws_organizations_account" "ai_platform" {
+  name      = "ai-platform-arheanja"
+  email     = var.account_emails["ai-platform"]
   parent_id = aws_organizations_organizational_unit.workloads.id
 
-  # Rol que Organizations preconfigura en la cuenta nueva; confía en la
-  # management account para asumir admin (acceso vía SSO/CLI).
-  role_name = "OrganizationAccountAccessRole"
-
-  # No cerrar la cuenta si se remueve del state (evita el proceso de 90 días por
-  # accidente). El cierre, si algún día se necesita, se hace conscientemente.
+  role_name         = "OrganizationAccountAccessRole"
   close_on_deletion = false
 
   lifecycle {
-    # El email y el nombre no deben cambiarse por accidente (forzarían recreación
-    # o son inmutables en AWS).
     ignore_changes = [role_name]
   }
 }
 
-output "dian_bot_account_id" {
-  description = "ID de la cuenta AWS dian-bot (Fase 2 piloto)."
-  value       = aws_organizations_account.dian_bot.id
+# --- Cuenta TaxOps (TaxOps-11 + investment-self) ---
+resource "aws_organizations_account" "taxops" {
+  name      = "taxops"
+  email     = var.account_emails["taxops"]
+  parent_id = aws_organizations_organizational_unit.workloads.id
+
+  role_name         = "OrganizationAccountAccessRole"
+  close_on_deletion = false
+
+  lifecycle {
+    ignore_changes = [role_name]
+  }
+}
+
+output "ai_platform_account_id" {
+  description = "ID de la cuenta ai-platform-arheanja (IA/agentes/bots)."
+  value       = aws_organizations_account.ai_platform.id
+}
+
+output "taxops_account_id" {
+  description = "ID de la cuenta taxops (TaxOps + investment-self)."
+  value       = aws_organizations_account.taxops.id
 }

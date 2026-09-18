@@ -173,28 +173,38 @@ Errores corregidos en el camino (documentados por trazabilidad):
   cierra la cuenta al destroy; el cierre real implica el proceso de 90 días de
   AWS). Por eso `close_on_deletion = false`.
 
-## 📌 Seña / próximo paso — anotado 2026-09-17
-
-**Mañana: migrar el workload de DIAN-bot a la cuenta nueva `dian-bot`
-(`080891698277`).**
-
-Se hace desde el repo **DIAN-bot** (no desde `arheanja-aws-org`). Checklist:
-- [ ] Apuntar el Terraform de `DIAN-bot/infra` a la cuenta `dian-bot`
-      (backend + provider con `AWS_PROFILE=dian-bot`).
-- [ ] Recrear ECR + Lambda + EventBridge + API Gateway + SSM en la cuenta nueva.
-- [ ] Re-cargar los secretos de Telegram en el SSM de la cuenta nueva
-      (`telegram_bot_token`, `chat_id`, `webhook_secret`) con `put-parameter`.
-- [ ] Re-push de la imagen del contenedor al ECR de la cuenta nueva.
-- [ ] Re-registrar el webhook de Telegram al nuevo API Gateway.
-- [ ] Actualizar el `.envrc` de DIAN-bot para exportar `AWS_PROFILE=dian-bot`.
-- [ ] Verificar (dry-run / `/consultar`) contra la cuenta nueva.
-- [ ] Destruir la infra vieja en la management account `786567028012`.
-
-Contexto: la cuenta `dian-bot` ya está creada, `ACTIVE`, bajo la OU `Workloads`
-(hereda las 4 SCPs), con acceso SSO admin para `jaime.admin` (perfil CLI local
-`dian-bot` ya configurado y verificado). Riesgo: bajo (casi stateless). Downtime:
-minutos. Costo: $0.
-
 Estado Fase 2 al cierre de hoy: `dian-bot` creada y accesible; las otras 4
 cuentas (`investment-self`, `trip-covenas`, `taxops-dev`, `taxops-prod`) en el
 PR #11 (pendiente de merge + aprobación del apply).
+
+## 2026-09-18 — Decisión de estructura: pocas cuentas, alineadas a proyectos
+
+Tras discutir el trade-off (aislamiento duro por cuenta vs. blando por tags),
+se decide **NO** crear una cuenta por cada proyecto. Son proyectos personales
+pre-monetización; 5 cuentas era sobre-ingeniería. Estructura acordada:
+
+| Cuenta | Aloja |
+|---|---|
+| `ai-platform-arheanja` (ex `dian-bot`, `080891698277`) | IA / agentes / bots: DIAN-bot, job-hunt-bot, matchstack, etc. |
+| `taxops` (nueva) | TaxOps-11 + investment-self (aislamiento compartido, aceptado) |
+| management `786567028012` | solo billing/org/SSO — se vacía al final vía migraciones |
+
+### Cambios de esta sesión
+- **PR #11 cerrado** (no se crean las 4 cuentas del plan anterior).
+- Cuenta `dian-bot` **renombrada in-place** a `ai-platform-arheanja` (mismo ID,
+  email y acceso; `moved` blocks para no recrear el recurso ni el assignment).
+- Nueva cuenta `taxops` + su asignación SSO admin.
+- `variables.tf`: emails reducidos a `ai-platform` (conserva
+  `taxopsa+dianbot@gmail.com`) y `taxops` (`taxopsa+taxops@gmail.com`).
+- Plan: **`2 to add, 1 to change, 0 to destroy`** (verificado, cero destroy).
+
+### Objetivo "management limpia" (Opción 2) — por fases, no inmediato
+Vaciar la management account es el objetivo, pero se logra al COMPLETAR las
+migraciones de workloads (trabajo real, delicado en el caso TaxOps prod). Orden:
+1. Migrar DIAN-bot → `ai-platform-arheanja` (piloto, casi stateless). ← próximo
+2. Migrar job-hunt-bot, matchstack → `ai-platform-arheanja`.
+3. Migrar TaxOps-11 + investment-self → `taxops` (ventana de mantenimiento).
+4. Vaciar y blindar la management `786567028012`.
+
+### Costo
+$0: renombrar y crear cuentas es gratis; cada cuenta trae su propio free tier.
