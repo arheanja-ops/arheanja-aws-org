@@ -122,6 +122,10 @@ resource "aws_organizations_policy" "deny_expensive" {
 }
 
 # --- SCP 3: Exigir tag Project al crear recursos clave ---
+# NOTA: S3 (CreateBucket) y SQS NO soportan enforcement de tags en la creación
+# vía SCP — el tagging del bucket es una operación separada posterior, así que
+# incluir s3:CreateBucket bloquearía TODA creación de bucket. Se excluye a
+# propósito; el tag de bucket se aplica con default_tags de Terraform.
 data "aws_iam_policy_document" "require_tags" {
   statement {
     sid    = "RequireProjectTag"
@@ -129,7 +133,6 @@ data "aws_iam_policy_document" "require_tags" {
     actions = [
       "ec2:RunInstances",
       "lambda:CreateFunction",
-      "s3:CreateBucket",
       "dynamodb:CreateTable",
     ]
     resources = ["*"]
