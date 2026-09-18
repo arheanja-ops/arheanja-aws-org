@@ -172,3 +172,29 @@ Errores corregidos en el camino (documentados por trazabilidad):
 - ⚠️ Irreversibilidad: crear es inmediato; eliminar no es trivial (Terraform no
   cierra la cuenta al destroy; el cierre real implica el proceso de 90 días de
   AWS). Por eso `close_on_deletion = false`.
+
+## 📌 Seña / próximo paso — anotado 2026-09-17
+
+**Mañana: migrar el workload de DIAN-bot a la cuenta nueva `dian-bot`
+(`080891698277`).**
+
+Se hace desde el repo **DIAN-bot** (no desde `arheanja-aws-org`). Checklist:
+- [ ] Apuntar el Terraform de `DIAN-bot/infra` a la cuenta `dian-bot`
+      (backend + provider con `AWS_PROFILE=dian-bot`).
+- [ ] Recrear ECR + Lambda + EventBridge + API Gateway + SSM en la cuenta nueva.
+- [ ] Re-cargar los secretos de Telegram en el SSM de la cuenta nueva
+      (`telegram_bot_token`, `chat_id`, `webhook_secret`) con `put-parameter`.
+- [ ] Re-push de la imagen del contenedor al ECR de la cuenta nueva.
+- [ ] Re-registrar el webhook de Telegram al nuevo API Gateway.
+- [ ] Actualizar el `.envrc` de DIAN-bot para exportar `AWS_PROFILE=dian-bot`.
+- [ ] Verificar (dry-run / `/consultar`) contra la cuenta nueva.
+- [ ] Destruir la infra vieja en la management account `786567028012`.
+
+Contexto: la cuenta `dian-bot` ya está creada, `ACTIVE`, bajo la OU `Workloads`
+(hereda las 4 SCPs), con acceso SSO admin para `jaime.admin` (perfil CLI local
+`dian-bot` ya configurado y verificado). Riesgo: bajo (casi stateless). Downtime:
+minutos. Costo: $0.
+
+Estado Fase 2 al cierre de hoy: `dian-bot` creada y accesible; las otras 4
+cuentas (`investment-self`, `trip-covenas`, `taxops-dev`, `taxops-prod`) en el
+PR #11 (pendiente de merge + aprobación del apply).
