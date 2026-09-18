@@ -25,6 +25,9 @@ resource "aws_organizations_organization" "this" {
   aws_service_access_principals = [
     "sso.amazonaws.com",
     "access-analyzer.amazonaws.com",
+    # Account Management: necesario para renombrar/gestionar cuentas miembro por
+    # IaC (account:PutAccountName). Habilitado 2026-09-18.
+    "account.amazonaws.com",
   ]
 
   lifecycle {
