@@ -208,3 +208,44 @@ migraciones de workloads (trabajo real, delicado en el caso TaxOps prod). Orden:
 
 ### Costo
 $0: renombrar y crear cuentas es gratis; cada cuenta trae su propio free tier.
+
+## 2026-10-31 — Cuenta temporal para el reto técnico de Wenia
+
+Se crea la cuenta `wenia-reto` dentro de esta organización (la de proyectos
+personales) para una prueba técnica de Platform Engineer. El caso se desarrolla
+en local y se despliega en AWS solo en sesiones cortas (lunes 2 y miércoles 4 de
+noviembre), con `terraform destroy` al final de cada una.
+
+### Excepción a la decisión del 2026-09-18
+Se había acordado no crear una cuenta por proyecto. Esta es una excepción
+deliberada: la cuenta es desechable y el aislamiento duro evita que el reto
+toque `taxops` o `ai-platform-arheanja`, y que sus guardrails afecten a esas
+cuentas (ver OU abajo).
+
+### Cambios (`infra/wenia_challenge.tf`, `infra/variables.tf`)
+- OU `Wenia-challenge` **bajo Root**, no bajo `Workloads`: `Workloads` hereda
+  `deny-expensive-services` (bloquea `ec2:CreateNatGateway`) y `require-tags`, y
+  el reto necesita EKS con NAT durante las sesiones.
+- Se adjuntan solo `region-lock` y `protect-org` (reutiliza `scps.tf`).
+- Cuenta `wenia-reto` con `prevent_destroy` y `close_on_deletion = false`;
+  email `arheanja+wenia-reto@gmail.com`.
+- Asignación SSO: `jaime.admin` → `AdministratorAccess` (reutiliza el permission
+  set y el usuario existentes; no se crea otro).
+- Budget `wenia-reto-monthly` de $5 filtrado por la cuenta hija. Es el 2º budget
+  de la management (el 1º es `account-zero-spend`), por lo que sigue dentro de
+  los 2 gratis por cuenta.
+
+### Estado de Terraform
+Esta capa vive en el state existente (`organization/terraform.tfstate` del bucket
+`awsorg-tfstate-786567028012`). El repo del reto (`wenia-platform`) no gestiona
+la Organization; sus capas (bootstrap de la cuenta hija y demo) usan el bucket
+propio de la cuenta `wenia-reto`.
+
+### Costo
+$0 para OU, cuenta, SCP, asignación SSO y budget. El gasto del reto (EKS, NAT y
+nodos, ~$0.23/h) ocurre solo durante las sesiones y lo acota el budget de $5.
+
+### Al terminar el reto
+`terraform destroy` de las capas del reto. La cuenta no se cierra con Terraform
+(`close_on_deletion = false`): se cierra a mano desde la management (90 días de
+AWS) y luego se retiran el bloque `wenia_challenge.tf` y su email.

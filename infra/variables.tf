@@ -7,6 +7,7 @@ variable "account_emails" {
     # cambiar el email de una cuenta ya creada es un proceso aparte de AWS.
     ai-platform = "taxopsa+dianbot@gmail.com"
     taxops      = "taxopsa+taxops@gmail.com"
+    wenia-reto  = "arheanja+wenia-reto@gmail.com"
   }
 }
 
